@@ -1,8 +1,7 @@
 package org.example.scc;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import org.example.metrics.Metrics;
+import java.util.*;
 
 public class SCCFinder {
     private final List<List<Integer>> adj;
@@ -14,21 +13,23 @@ public class SCCFinder {
     private boolean[] stackMember;
     private Stack<Integer> stack;
 
+    private final Metrics metrics = new Metrics();
+
     public SCCFinder(List<List<Integer>> adj) {
         this.adj = adj;
         this.n = adj.size();
     }
 
     public List<List<Integer>> findSCCs() {
+        metrics.start(); // ⏱ запускаем таймер
+
         disc = new int[n];
         low = new int[n];
         stackMember = new boolean[n];
         stack = new Stack<>();
 
-        for (int i = 0; i < n; i++) {
-            disc[i] = -1;
-            low[i] = -1;
-        }
+        Arrays.fill(disc, -1);
+        Arrays.fill(low, -1);
 
         List<List<Integer>> sccs = new ArrayList<>();
 
@@ -38,15 +39,22 @@ public class SCCFinder {
             }
         }
 
+        metrics.stop(); // ⏹ останавливаем
+        metrics.print("Tarjan SCC"); // 📊 выводим статистику
+
         return sccs;
     }
 
     private void dfs(int u, List<List<Integer>> sccs) {
+        metrics.inc("dfs_visits");
+
         disc[u] = low[u] = ++time;
         stack.push(u);
         stackMember[u] = true;
 
         for (int v : adj.get(u)) {
+            metrics.inc("edges_checked");
+
             if (disc[v] == -1) {
                 dfs(v, sccs);
                 low[u] = Math.min(low[u], low[v]);
@@ -55,6 +63,7 @@ public class SCCFinder {
             }
         }
 
+        // Если нашли корень SCC
         if (low[u] == disc[u]) {
             List<Integer> component = new ArrayList<>();
             int w;
@@ -67,4 +76,5 @@ public class SCCFinder {
         }
     }
 }
+
 
