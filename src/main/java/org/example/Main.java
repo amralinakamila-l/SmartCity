@@ -13,7 +13,7 @@ import java.util.*;
 public class Main {
     public static void main(String[] args) throws Exception {
         Gson gson = new Gson();
-        GraphData graph = gson.fromJson(new FileReader("tasks.json"), GraphData.class);
+        GraphData graph = gson.fromJson(new FileReader("data/tasks.json"), GraphData.class);
 
         var adj = GraphBuilder.buildAdjList(graph);
 
