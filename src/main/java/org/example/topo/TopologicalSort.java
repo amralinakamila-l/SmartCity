@@ -30,14 +30,14 @@ public class TopologicalSort {
         List<Integer> order = new ArrayList<>();
         while (!q.isEmpty()) {
             int u = q.poll();
-            metrics.inc("queue_pops");
+            metrics.increment("queue_pops");
             order.add(u);
             for (int v : adj.get(u)) {
                 indeg[v]--;
-                metrics.inc("edges_processed");
+                metrics.increment("edges_processed");
                 if (indeg[v] == 0) {
                     q.add(v);
-                    metrics.inc("queue_pushes");
+                    metrics.increment("queue_pushes");
                 }
             }
         }
@@ -71,15 +71,15 @@ public class TopologicalSort {
         List<Integer> out = new ArrayList<>();
         while (!q.isEmpty()) {
             int u = q.poll();
-            metrics.inc("queue_pops");
+            metrics.increment("queue_pops");
             out.add(u);
             for (int[] e : wadj.get(u)) {
                 int v = e[0];
                 indeg[v]--;
-                metrics.inc("edges_processed");
+                metrics.increment("edges_processed");
                 if (indeg[v] == 0) {
                     q.add(v);
-                    metrics.inc("queue_pushes");
+                    metrics.increment("queue_pushes");
                 }
             }
         }

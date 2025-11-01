@@ -17,9 +17,9 @@ import java.util.*;
 public class Main {
 
     private static final String[] INPUT_FILES = {
-            "data/small1.json", "data/small2.json", "data/small3.json",
-            "data/medium1.json", "data/medium2.json", "data/medium3.json",
-            "data/large1.json", "data/large2.json", "data/large3.json"
+            "data/input/small1.json", "data/input/small2.json", "data/input/small3.json",
+            "data/input/medium1.json", "data/input/medium2.json", "data/input/medium3.json",
+            "data/input/large1.json", "data/input/large2.json", "data/input/large3.json"
     };
 
     public static void main(String[] args) throws Exception {
@@ -103,7 +103,7 @@ public class Main {
                 gson.toJson(output, fw);
             }
 
-            System.out.println("✅ Saved: " + outFile + "\n");
+            System.out.println("Saved: " + outFile + "\n");
         }
 
         System.out.println("All graphs processed successfully.");

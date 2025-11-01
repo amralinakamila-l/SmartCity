@@ -1,0 +1,56 @@
+{
+  "inputFile": "small2.json",
+  "numNodes": 8,
+  "numEdges": 22,
+  "SCC": {
+    "numSCCs": 1,
+    "components": [
+      [
+        7,
+        6,
+        3,
+        5,
+        4,
+        2,
+        1,
+        0
+      ]
+    ],
+    "sizes": [
+      8
+    ]
+  },
+  "CondensationDAG": {
+    "numNodes": 1,
+    "edges": [
+      []
+    ]
+  },
+  "TopologicalOrder": [
+    0
+  ],
+  "ShortestPaths": {
+    "dist": [
+      0.0
+    ],
+    "parent": [
+      -1
+    ],
+    "source": 0,
+    "longestLength": 0.0
+  },
+  "LongestPath": {
+    "dist": [
+      0.0
+    ],
+    "parent": [
+      -1
+    ],
+    "source": 0,
+    "longestLength": 0.0,
+    "longestPath": [
+      0
+    ]
+  },
+  "Metrics": "\n\u003d\u003d\u003d\u003d Metrics Summary \u003d\u003d\u003d\u003d\nNo metrics recorded.\n"
+}

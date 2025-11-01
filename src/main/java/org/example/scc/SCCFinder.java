@@ -46,14 +46,14 @@ public class SCCFinder {
     }
 
     private void dfs(int u, List<List<Integer>> sccs) {
-        metrics.inc("dfs_visits");
+        metrics.increment("dfs_visits");
 
         disc[u] = low[u] = ++time;
         stack.push(u);
         stackMember[u] = true;
 
         for (int v : adj.get(u)) {
-            metrics.inc("edges_checked");
+            metrics.increment("edges_checked");
 
             if (disc[v] == -1) {
                 dfs(v, sccs);
