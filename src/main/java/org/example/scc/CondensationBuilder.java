@@ -23,6 +23,8 @@ public class CondensationBuilder {
         int comps = sccs.size();
         int n = adj.size();
 
+        System.out.println("Building condensation: " + comps + " SCCs from " + n + " nodes");
+
         // node -> comp id
         int[] nodeToComp = new int[n];
         for (int i = 0; i < comps; i++) {
@@ -50,6 +52,7 @@ public class CondensationBuilder {
             dag.get(cu).add(new int[]{cv, w});
         }
 
+        System.out.println("Condensation edges: " + minEdge.size());
         return new Result(dag, nodeToComp);
     }
 }

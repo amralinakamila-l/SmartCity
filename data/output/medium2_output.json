@@ -1,63 +1,32 @@
 {
   "inputFile": "medium2.json",
   "numNodes": 15,
-  "numEdges": 84,
-  "SCC": {
-    "numSCCs": 1,
-    "components": [
-      [
-        6,
-        7,
-        4,
-        13,
-        8,
-        11,
-        12,
-        3,
-        9,
-        14,
-        5,
-        10,
-        2,
-        1,
-        0
-      ]
-    ],
-    "sizes": [
-      15
-    ]
-  },
-  "CondensationDAG": {
-    "numNodes": 1,
-    "edges": [
-      []
-    ]
-  },
+  "numEdges": 50,
+  "SCCs_num": 4,
+  "SCCs_sizes": [
+    4,
+    4,
+    3,
+    4
+  ],
+  "CondensationNodes": 4,
   "TopologicalOrder": [
+    3,
+    2,
+    1,
     0
   ],
-  "ShortestPaths": {
-    "dist": [
-      0.0
-    ],
-    "parent": [
-      -1
-    ],
-    "source": 0,
-    "longestLength": 0.0
-  },
-  "LongestPath": {
-    "dist": [
-      0.0
-    ],
-    "parent": [
-      -1
-    ],
-    "source": 0,
-    "longestLength": 0.0,
-    "longestPath": [
-      0
-    ]
-  },
-  "Metrics": "\n\u003d\u003d\u003d\u003d Metrics Summary \u003d\u003d\u003d\u003d\nNo metrics recorded.\n"
+  "ShortestPathsFromComponent0": [
+    0.0,
+    -1.0,
+    -1.0,
+    -1.0
+  ],
+  "LongestPathLength": 4.0,
+  "LongestPathComponents": [
+    3,
+    1,
+    0
+  ],
+  "TimingMs": 1.6014
 }

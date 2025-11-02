@@ -15,10 +15,9 @@ public class GraphBuilder {
         }
 
         for (Edge e : graph.edges) {
+            // ТОЛЬКО направленные ребра
             adj.get(e.u).add(e.v);
-            if (!graph.directed) {
-                adj.get(e.v).add(e.u);
-            }
+            // Убрали добавление обратных ребер для неориентированных графов
         }
 
         return adj;

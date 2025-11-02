@@ -7,17 +7,30 @@ public class Metrics {
     private Map<String, Integer> counters = new HashMap<>();
     private Map<String, Long> timers = new HashMap<>();
     private long startTime;
+    private boolean running = false;
 
     public Metrics() {
-        this.startTime = System.nanoTime();
+        // Конструктор без автоматического старта
     }
 
     // 🔹 Запускаем измерение времени
     public void start() {
+        if (running) {
+            System.err.println("Metrics already running! Stopping current measurement.");
+            stop();
+        }
         this.startTime = System.nanoTime();
+        this.running = true;
     }
+
     public void stop() {
-        this.startTime = System.nanoTime();
+        if (running) {
+            long duration = System.nanoTime() - startTime;
+            // Накопляем время, а не заменяем
+            long currentTotal = timers.getOrDefault("total", 0L);
+            timers.put("total", currentTotal + duration);
+            running = false;
+        }
     }
 
     // 🔹 Увеличиваем счётчик операций
@@ -38,7 +51,6 @@ public class Metrics {
 
     // 🔹 Печать короткого отчёта
     public void print(String label) {
-        long totalMs = (System.nanoTime() - startTime) / 1_000_000;
         System.out.println("\n[" + label + "] Metrics:");
         for (var e : counters.entrySet()) {
             System.out.printf("  %s: %d\n", e.getKey(), e.getValue());
@@ -46,33 +58,60 @@ public class Metrics {
         for (var e : timers.entrySet()) {
             System.out.printf("  %s: %.3f ms\n", e.getKey(), getTimeMs(e.getKey()));
         }
-        System.out.printf("  Total time: %d ms\n", totalMs);
+        if (timers.containsKey("total")) {
+            System.out.printf("  Total time: %.3f ms\n", getTimeMs("total"));
+        }
     }
 
     // 🔹 Подробный итоговый отчёт (для Main)
     public String summary() {
         StringBuilder sb = new StringBuilder();
-        sb.append("\n==== Metrics Summary ====\n");
+        sb.append("Metrics: ");
 
-        if (counters.isEmpty() && timers.isEmpty()) {
-            sb.append("No metrics recorded.\n");
-            return sb.toString();
+        boolean hasData = false;
+
+        if (!counters.isEmpty()) {
+            sb.append("Counters[");
+            for (var e : counters.entrySet()) {
+                sb.append(String.format("%s=%d, ", e.getKey(), e.getValue()));
+            }
+            sb.setLength(sb.length() - 2); // remove last ", "
+            sb.append("] ");
+            hasData = true;
         }
 
-        sb.append("-- Counters --\n");
-        for (var e : counters.entrySet()) {
-            sb.append(String.format("%s: %d\n", e.getKey(), e.getValue()));
+        if (!timers.isEmpty()) {
+            sb.append("Timings[");
+            for (var e : timers.entrySet()) {
+                sb.append(String.format("%s=%.3fms, ", e.getKey(), getTimeMs(e.getKey())));
+            }
+            sb.setLength(sb.length() - 2); // remove last ", "
+            sb.append("]");
+            hasData = true;
         }
 
-        sb.append("-- Timings (ms) --\n");
-        for (var e : timers.entrySet()) {
-            sb.append(String.format("%s: %.3f ms\n", e.getKey(), getTimeMs(e.getKey())));
+        if (!hasData) {
+            sb.append("No metrics collected");
         }
-
-        long totalMs = (System.nanoTime() - startTime) / 1_000_000;
-        sb.append(String.format("Total runtime: %d ms\n", totalMs));
 
         return sb.toString();
+    }
+
+    // 🔹 Получить общее время в наносекундах
+    public long getTotalTimeNs() {
+        return timers.getOrDefault("total", 0L);
+    }
+
+    // 🔹 Очистить метрики
+    public void clear() {
+        counters.clear();
+        timers.clear();
+        running = false;
+    }
+
+    // 🔹 Проверить, запущены ли измерения
+    public boolean isRunning() {
+        return running;
     }
 }
 

@@ -13,15 +13,14 @@ public class SCCFinder {
     private boolean[] stackMember;
     private Stack<Integer> stack;
 
-    private final Metrics metrics = new Metrics();
-
     public SCCFinder(List<List<Integer>> adj) {
         this.adj = adj;
         this.n = adj.size();
     }
 
     public List<List<Integer>> findSCCs() {
-        metrics.start(); // ⏱ запускаем таймер
+        Metrics metrics = new Metrics();
+        metrics.start();
 
         disc = new int[n];
         low = new int[n];
@@ -35,17 +34,22 @@ public class SCCFinder {
 
         for (int i = 0; i < n; i++) {
             if (disc[i] == -1) {
-                dfs(i, sccs);
+                dfs(i, sccs, metrics);
             }
         }
 
-        metrics.stop(); // ⏹ останавливаем
-        metrics.print("Tarjan SCC"); // 📊 выводим статистику
+        metrics.stop();
+        metrics.print("Tarjan SCC");
+
+        System.out.println("Found " + sccs.size() + " SCCs:");
+        for (int i = 0; i < sccs.size(); i++) {
+            System.out.println("  SCC " + i + ": " + sccs.get(i).size() + " nodes - " + sccs.get(i));
+        }
 
         return sccs;
     }
 
-    private void dfs(int u, List<List<Integer>> sccs) {
+    private void dfs(int u, List<List<Integer>> sccs, Metrics metrics) {
         metrics.increment("dfs_visits");
 
         disc[u] = low[u] = ++time;
@@ -56,7 +60,7 @@ public class SCCFinder {
             metrics.increment("edges_checked");
 
             if (disc[v] == -1) {
-                dfs(v, sccs);
+                dfs(v, sccs, metrics);
                 low[u] = Math.min(low[u], low[v]);
             } else if (stackMember[v]) {
                 low[u] = Math.min(low[u], disc[v]);

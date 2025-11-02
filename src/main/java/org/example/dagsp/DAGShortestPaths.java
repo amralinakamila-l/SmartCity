@@ -4,10 +4,6 @@ import org.example.metrics.Metrics;
 
 import java.util.*;
 
-/**
- * Алгоритмы кратчайших и длиннейших путей в DAG.
- * Работает по топологическому порядку.
- */
 public class DAGShortestPaths {
 
     public static class Result {
@@ -16,120 +12,151 @@ public class DAGShortestPaths {
         public int source;
         public double longestLength;
         public List<Integer> longestPath;
+        public Metrics metrics;
 
-        public Result(double[] dist, int[] parent, int source) {
+        public Result(double[] dist, int[] parent, int source, Metrics metrics) {
             this.dist = dist;
             this.parent = parent;
             this.source = source;
+            this.metrics = metrics;
         }
     }
 
-    /** Найти кратчайшие пути из одного источника в DAG */
-    public static Result findShortestPaths(List<List<Integer>> dag, int source) {
-        int n = dag.size();
+    // ==========================
+    // Взвешенный DAG
+    // ==========================
+    public static Result findShortestPathsWeighted(List<List<int[]>> wadj, int source) {
+        Metrics metrics = new Metrics();
+        metrics.start();
+
+        int n = wadj.size();
         double[] dist = new double[n];
         int[] parent = new int[n];
         Arrays.fill(dist, Double.POSITIVE_INFINITY);
         Arrays.fill(parent, -1);
         dist[source] = 0;
 
-        Metrics metrics = new Metrics();
-        metrics.start();
+        List<Integer> topo = topoSortWeighted(wadj);
 
-        // Получим топологический порядок
-        List<Integer> topo = topoSort(dag);
-
-        // Динамическое обновление
         for (int u : topo) {
-            for (int v : dag.get(u)) {
+            if (dist[u] == Double.POSITIVE_INFINITY) continue;
+
+            for (int[] e : wadj.get(u)) {
                 metrics.increment("relaxations");
-                if (dist[u] + 1 < dist[v]) {
-                    dist[v] = dist[u] + 1;
+                int v = e[0];
+                int w = e[1];
+                double newDist = dist[u] + w;
+                if (newDist < dist[v]) {
+                    dist[v] = newDist;
                     parent[v] = u;
                 }
             }
         }
 
         metrics.stop();
-        metrics.print("DAG Shortest Paths");
-
-        return new Result(dist, parent, source);
+        return new Result(dist, parent, source, metrics);
     }
 
-    /** Найти самый длинный путь (critical path) в DAG */
-    public static Result findLongestPath(List<List<Integer>> dag) {
-        int n = dag.size();
+    public static Result findLongestPathWeighted(List<List<int[]>> wadj) {
+        Metrics metrics = new Metrics();
+        metrics.start();
+
+        int n = wadj.size();
         double[] dist = new double[n];
         int[] parent = new int[n];
         Arrays.fill(dist, Double.NEGATIVE_INFINITY);
         Arrays.fill(parent, -1);
 
-        Metrics metrics = new Metrics();
-        metrics.start();
+        List<Integer> topo = topoSortWeighted(wadj);
 
-        List<Integer> topo = topoSort(dag);
-        dist[0] = 0;
+        // Находим и инициализируем все источники (вершины с входящей степенью 0)
+        boolean[] hasIncoming = new boolean[n];
+        for (int u = 0; u < n; u++) {
+            for (int[] e : wadj.get(u)) {
+                hasIncoming[e[0]] = true;
+            }
+        }
+
+        for (int i = 0; i < n; i++) {
+            if (!hasIncoming[i]) {
+                dist[i] = 0;
+            }
+        }
 
         for (int u : topo) {
-            for (int v : dag.get(u)) {
+            if (dist[u] == Double.NEGATIVE_INFINITY) continue;
+
+            for (int[] e : wadj.get(u)) {
                 metrics.increment("relaxations");
-                if (dist[u] + 1 > dist[v]) {
-                    dist[v] = dist[u] + 1;
+                int v = e[0];
+                int w = e[1];
+                double newDist = dist[u] + w;
+                if (newDist > dist[v]) {
+                    dist[v] = newDist;
                     parent[v] = u;
                 }
             }
         }
 
-        // Найдём конец критического пути
+        // Находим максимальный путь
         double maxDist = Double.NEGATIVE_INFINITY;
         int end = -1;
         for (int i = 0; i < n; i++) {
-            if (dist[i] > maxDist) {
+            if (dist[i] > maxDist && dist[i] != Double.NEGATIVE_INFINITY) {
                 maxDist = dist[i];
                 end = i;
             }
         }
 
-        // Восстановим путь
         List<Integer> path = new ArrayList<>();
-        while (end != -1) {
-            path.add(end);
-            end = parent[end];
+        if (end != -1) {
+            // Восстанавливаем путь от конца к началу
+            int current = end;
+            while (current != -1) {
+                path.add(current);
+                current = parent[current];
+            }
+            Collections.reverse(path);
         }
-        Collections.reverse(path);
 
         metrics.stop();
-        metrics.print("DAG Longest Path");
 
-        Result r = new Result(dist, parent, 0);
+        Result r = new Result(dist, parent, 0, metrics);
         r.longestLength = maxDist;
         r.longestPath = path;
         return r;
     }
 
-    // Вспомогательный метод: топологическая сортировка
-    private static List<Integer> topoSort(List<List<Integer>> dag) {
-        int n = dag.size();
+    // ==========================
+    // Вспомогательные топологические сортировки
+    // ==========================
+    private static List<Integer> topoSortWeighted(List<List<int[]>> wadj) {
+        int n = wadj.size();
         int[] indeg = new int[n];
-        for (int u = 0; u < n; u++)
-            for (int v : dag.get(u)) indeg[v]++;
+        for (int u = 0; u < n; u++) {
+            for (int[] e : wadj.get(u)) {
+                indeg[e[0]]++;
+            }
+        }
 
         Queue<Integer> q = new ArrayDeque<>();
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < n; i++) {
             if (indeg[i] == 0) q.add(i);
+        }
 
         List<Integer> order = new ArrayList<>();
         while (!q.isEmpty()) {
             int u = q.poll();
             order.add(u);
-            for (int v : dag.get(u)) {
+            for (int[] e : wadj.get(u)) {
+                int v = e[0];
                 indeg[v]--;
                 if (indeg[v] == 0) q.add(v);
             }
         }
-
         return order;
     }
 }
+
 
 
