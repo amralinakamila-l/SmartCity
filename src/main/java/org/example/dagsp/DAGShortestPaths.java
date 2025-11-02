@@ -1,6 +1,7 @@
 package org.example.dagsp;
 import org.example.metrics.Metrics;
 import java.util.*;
+
 public class DAGShortestPaths {
 
     public static class Result {
@@ -18,7 +19,10 @@ public class DAGShortestPaths {
             this.metrics = metrics;
         }
     }
+
     public static Result findShortestPathsWeighted(List<List<int[]>> wadj, int source) {
+        validateGraph(wadj, true);
+
         Metrics metrics = new Metrics();
         metrics.start();
 
@@ -51,6 +55,8 @@ public class DAGShortestPaths {
     }
 
     public static Result findLongestPathWeighted(List<List<int[]>> wadj) {
+        validateGraph(wadj, false);
+
         Metrics metrics = new Metrics();
         metrics.start();
 
@@ -101,7 +107,6 @@ public class DAGShortestPaths {
 
         List<Integer> path = new ArrayList<>();
         if (end != -1) {
-
             int current = end;
             while (current != -1) {
                 path.add(current);
@@ -116,6 +121,27 @@ public class DAGShortestPaths {
         r.longestLength = maxDist;
         r.longestPath = path;
         return r;
+    }
+
+    private static void validateGraph(List<List<int[]>> wadj, boolean checkWeights) {
+        if (wadj == null || wadj.isEmpty()) {
+            throw new IllegalArgumentException("Graph is empty or null.");
+        }
+
+        if (checkWeights) {
+            for (List<int[]> edges : wadj) {
+                for (int[] e : edges) {
+                    if (e[1] < 0) {
+                        throw new IllegalArgumentException("Graph contains negative edge weight: " + e[1]);
+                    }
+                }
+            }
+        }
+
+        List<Integer> topo = topoSortWeighted(wadj);
+        if (topo.size() != wadj.size()) {
+            throw new IllegalArgumentException("Graph contains cycles — not a DAG.");
+        }
     }
 
     private static List<Integer> topoSortWeighted(List<List<int[]>> wadj) {
@@ -145,6 +171,7 @@ public class DAGShortestPaths {
         return order;
     }
 }
+
 
 
 
