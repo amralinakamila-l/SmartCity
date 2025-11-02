@@ -2,6 +2,8 @@ package org.example;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.example.dagsp.DAGShortestPaths;
 import org.example.graph.GraphData;
 import org.example.graph.utils.GraphBuilder;
@@ -30,12 +32,44 @@ public class Main {
         if (!outputDir.exists()) outputDir.mkdirs();
 
         File csvFile = new File("data/results.csv");
+        File excelFile = new File("data/results.xlsx");
 
-        // Настройка форматирования чисел для CSV (используем точку как разделитель)
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
         DecimalFormat timeFormat = new DecimalFormat("0.000", symbols);
 
-        // 🔥 ПРОГРЕВ JVM - запускаем один раз перед основными измерениями
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Graph Analysis Results");
+
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setColor(IndexedColors.WHITE.getIndex());
+        headerStyle.setFont(headerFont);
+        headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+
+        CellStyle dataStyle = workbook.createCellStyle();
+        dataStyle.setAlignment(HorizontalAlignment.LEFT);
+
+        CellStyle numberStyle = workbook.createCellStyle();
+        numberStyle.setAlignment(HorizontalAlignment.RIGHT);
+
+        String[] headers = {
+                "Input File", "Nodes", "Edges", "SCC Count", "SCC Sizes",
+                "Topological Order", "Shortest Paths", "Longest Path Length",
+                "Longest Path", "Time (ms)"
+        };
+
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        int excelRowNum = 1;
+
         System.out.println("Warming up JVM...");
         warmUpJVM(gson);
         System.out.println("Warm up completed.\n");
@@ -46,15 +80,12 @@ public class Main {
             for (String inputFile : INPUT_FILES) {
                 System.out.println("\n=== Processing: " + inputFile + " ===");
 
-                // Загрузка графа (не включаем в измерение времени)
                 GraphData graph = gson.fromJson(new FileReader(inputFile), GraphData.class);
                 List<List<Integer>> adj = GraphBuilder.buildAdjList(graph);
 
-                // Начинаем измерение времени ТОЛЬКО для алгоритмов
                 Metrics pipelineMetrics = new Metrics();
                 pipelineMetrics.start();
 
-                // --- SCC
                 SCCFinder sccFinder = new SCCFinder(adj);
                 List<List<Integer>> sccs = sccFinder.findSCCs();
 
@@ -63,17 +94,13 @@ public class Main {
                     System.out.println("  SCC " + i + ": " + sccs.get(i).size() + " nodes");
                 }
 
-                // --- Build condensation DAG
                 CondensationBuilder.Result condensation = CondensationBuilder.build(sccs, adj, graph);
                 List<List<int[]>> weightedDAG = condensation.dagAdj;
-
                 System.out.println("Condensation DAG has " + weightedDAG.size() + " components");
 
-                // --- Topological order on weighted DAG
                 List<Integer> topoOrder = TopologicalSort.sortWeighted(weightedDAG);
                 System.out.println("Topological order: " + topoOrder);
 
-                // --- Shortest paths on weighted DAG (from component 0)
                 var shortestResult = DAGShortestPaths.findShortestPathsWeighted(weightedDAG, 0);
                 List<Double> spDist = new ArrayList<>();
                 for (double d : shortestResult.dist) {
@@ -81,42 +108,32 @@ public class Main {
                 }
                 System.out.println("Shortest paths from component 0: " + spDist);
 
-                // --- Longest path on weighted DAG
                 var longestResult = DAGShortestPaths.findLongestPathWeighted(weightedDAG);
                 System.out.println("Longest path length: " + longestResult.longestLength);
                 System.out.println("Longest path: " + longestResult.longestPath);
 
-                // --- Завершаем измерение времени
                 pipelineMetrics.stop();
-
                 double totalTimeMs = pipelineMetrics.getTimeMs("total");
                 System.out.printf("Total algorithm time: %.3f ms\n", totalTimeMs);
+                Row dataRow = sheet.createRow(excelRowNum++);
 
-                // --- JSON Output
-                Map<String, Object> output = new LinkedHashMap<>();
-                output.put("inputFile", new File(inputFile).getName());
-                output.put("numNodes", graph.n);
-                output.put("numEdges", graph.edges.size());
-                output.put("SCCs_num", sccs.size());
-                output.put("SCCs_sizes", sccs.stream().map(List::size).toList());
-                output.put("CondensationNodes", weightedDAG.size());
-                output.put("TopologicalOrder", topoOrder);
-                output.put("ShortestPathsFromComponent0", spDist);
-                output.put("LongestPathLength", longestResult.longestLength);
-                output.put("LongestPathComponents", longestResult.longestPath);
-                output.put("TimingMs", totalTimeMs);
+                dataRow.createCell(0).setCellValue(new File(inputFile).getName());
+                dataRow.createCell(1).setCellValue(graph.n);
+                dataRow.createCell(2).setCellValue(graph.edges.size());
+                dataRow.createCell(3).setCellValue(sccs.size());
+                dataRow.createCell(4).setCellValue(sccs.stream().map(List::size).toList().toString());
+                dataRow.createCell(5).setCellValue(topoOrder.toString());
+                dataRow.createCell(6).setCellValue(spDist.toString());
+                dataRow.createCell(7).setCellValue(longestResult.longestLength);
+                dataRow.createCell(8).setCellValue(longestResult.longestPath != null ?
+                        longestResult.longestPath.toString() : "[]");
+                dataRow.createCell(9).setCellValue(totalTimeMs);
 
-                String outFile = "data/output/" + new File(inputFile).getName().replace(".json", "_output.json");
-                try (FileWriter fw = new FileWriter(outFile)) {
-                    gson.toJson(output, fw);
-                }
-
-                // --- CSV Output - правильное форматирование
-                // Экранируем списки, которые содержат запятые
                 String sizesStr = "\"" + sccs.stream().map(List::size).toList().toString() + "\"";
                 String topoStr = "\"" + topoOrder.toString() + "\"";
                 String shortestStr = "\"" + spDist.toString() + "\"";
-                String longestPathStr = "\"" + (longestResult.longestPath != null ? longestResult.longestPath.toString() : "[]") + "\"";
+                String longestPathStr = "\"" + (longestResult.longestPath != null ?
+                        longestResult.longestPath.toString() : "[]") + "\"";
 
                 pw.printf("%s,%d,%d,%d,%s,%s,%s,%.1f,%s,%s%n",
                         inputFile,
@@ -131,25 +148,29 @@ public class Main {
                         timeFormat.format(totalTimeMs)
                 );
 
-                System.out.println("Saved: " + outFile);
-
-                // Небольшая пауза между обработкой файлов
-                try { Thread.sleep(100); } catch (InterruptedException e) {}
+                System.out.println("Processed: " + inputFile);
+                try { Thread.sleep(50); } catch (InterruptedException e) {}
             }
         }
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
 
-        System.out.println("\nCSV saved to " + csvFile.getAbsolutePath());
+        try (FileOutputStream fileOut = new FileOutputStream(excelFile)) {
+            workbook.write(fileOut);
+            System.out.println("\nExcel file created: " + excelFile.getAbsolutePath());
+        }
+        workbook.close();
+
+        System.out.println("CSV saved to: " + csvFile.getAbsolutePath());
         System.out.println("All graphs processed successfully!");
     }
 
-    // 🔥 Метод для прогрева JVM
     private static void warmUpJVM(Gson gson) throws Exception {
-        // Используем первый файл для прогрева
         String warmupFile = "data/input/small1.json";
         GraphData graph = gson.fromJson(new FileReader(warmupFile), GraphData.class);
         List<List<Integer>> adj = GraphBuilder.buildAdjList(graph);
 
-        // Запускаем несколько раз все алгоритмы
         for (int i = 0; i < 3; i++) {
             SCCFinder sccFinder = new SCCFinder(adj);
             List<List<Integer>> sccs = sccFinder.findSCCs();

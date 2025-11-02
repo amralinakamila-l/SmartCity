@@ -1,17 +1,8 @@
 package org.example.topo;
-
 import org.example.metrics.Metrics;
 import java.util.*;
-
-/**
- * Топологическая сортировка (алгоритм Кана) с метриками.
- */
 public class TopologicalSort {
 
-    /**
-     * Топологическая сортировка для обычного DAG (без весов).
-     * Считает количество pops/pushes и время выполнения.
-     */
     public static List<Integer> sort(List<List<Integer>> adj) {
         Metrics metrics = new Metrics();
         metrics.start();
@@ -51,10 +42,6 @@ public class TopologicalSort {
 
         return order;
     }
-
-    /**
-     * Вариант для взвешенного DAG (adjacency list: int[]{to, weight})
-     */
     public static List<Integer> sortWeighted(List<List<int[]>> wadj) {
         Metrics metrics = new Metrics();
         metrics.start();

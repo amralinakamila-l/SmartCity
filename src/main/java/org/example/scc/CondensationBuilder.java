@@ -1,14 +1,8 @@
 package org.example.scc;
-
 import org.example.graph.Edge;
 import org.example.graph.GraphData;
-
 import java.util.*;
 
-/**
- * Строит конденсационный граф (компонента -> компонента) и
- * сохраняет веса рёбер как минимальный вес между компонентами.
- */
 public class CondensationBuilder {
 
     public static class Result {
@@ -25,13 +19,11 @@ public class CondensationBuilder {
 
         System.out.println("Building condensation: " + comps + " SCCs from " + n + " nodes");
 
-        // node -> comp id
         int[] nodeToComp = new int[n];
         for (int i = 0; i < comps; i++) {
             for (int v : sccs.get(i)) nodeToComp[v] = i;
         }
 
-        // use map pair (uComp, vComp) -> minWeight
         Map<Long, Integer> minEdge = new HashMap<>();
         for (Edge e : graph.edges) {
             int cu = nodeToComp[e.u], cv = nodeToComp[e.v];

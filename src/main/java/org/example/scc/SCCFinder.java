@@ -1,5 +1,4 @@
 package org.example.scc;
-
 import org.example.metrics.Metrics;
 import java.util.*;
 
@@ -67,7 +66,6 @@ public class SCCFinder {
             }
         }
 
-        // Если нашли корень SCC
         if (low[u] == disc[u]) {
             List<Integer> component = new ArrayList<>();
             int w;

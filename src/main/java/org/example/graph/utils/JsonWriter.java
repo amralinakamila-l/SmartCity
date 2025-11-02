@@ -10,7 +10,7 @@ import java.io.IOException;
 public class JsonWriter {
 
     private static final Gson gson = new GsonBuilder()
-            .setPrettyPrinting() // делает JSON читаемым
+            .setPrettyPrinting()
             .create();
 
     public static void writeResult(AlgorithmResult result, String filePath) {
